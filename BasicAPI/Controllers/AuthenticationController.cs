@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -10,18 +11,23 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 
 namespace BasicAPI.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/v{Version:apiVersion}/[controller]")]
 [ApiController]
+[ApiVersionNeutral]
+[AllowAnonymous]
 public class AuthenticationController : ControllerBase
 {
     public record AuthenticationData(string UserName, string Password);
+   
     public record UserData(int Id, string UserName, string Role, string EmployeeId);
 
     private readonly IConfiguration _config;
+    private readonly ILogger<AuthenticationController> _logger;
 
-    public AuthenticationController(IConfiguration config)
+    public AuthenticationController(IConfiguration config, ILogger<AuthenticationController> logger)
     {
         _config = config;
+        _logger = logger;
     }
 
     [HttpPost("token")]
@@ -59,6 +65,7 @@ public class AuthenticationController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    
     private UserData? ValidateCredentials(AuthenticationData authData)
     {
         if (CompareValues(authData.UserName, "admin") && CompareValues(authData.Password, "admin"))
@@ -70,6 +77,12 @@ public class AuthenticationController : ControllerBase
         {
             return new UserData(2, authData.UserName, "User", "E101");
         }
+
+        if (CompareValues(authData.UserName, "string") && CompareValues(authData.Password, "string"))
+        {
+            return new UserData(3, authData.UserName, "Tester", "E201");
+        }
+
 
         return null;
     }
